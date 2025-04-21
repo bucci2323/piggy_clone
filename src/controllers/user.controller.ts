@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
-import { User } from '../models/user.model';
+import { User } from '../models/User';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
@@ -13,30 +13,28 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password, name } = req.body;
+    const { email, password, firstName, lastName } = req.body;
 
     // Check if user already exists
-    let user = await User.findOne({ email });
-    if (user) {
+    const existingUser = await User.findOne({ where: { email } });
+    if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
     }
 
     // Hash password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create new user
-    user = new User({
+    const user = await User.create({
       email,
       password: hashedPassword,
-      name
+      firstName,
+      lastName
     });
-
-    await user.save();
 
     // Create JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -44,9 +42,10 @@ export const register = async (req: Request, res: Response) => {
     res.status(201).json({
       token,
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
-        name: user.name
+        firstName: user.firstName,
+        lastName: user.lastName
       }
     });
   } catch (error) {
@@ -65,7 +64,7 @@ export const login = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     // Check if user exists
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
@@ -78,7 +77,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Create JWT token
     const token = jwt.sign(
-      { userId: user._id },
+      { userId: user.id },
       JWT_SECRET,
       { expiresIn: '1h' }
     );
@@ -86,9 +85,10 @@ export const login = async (req: Request, res: Response) => {
     res.json({
       token,
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
-        name: user.name
+        firstName: user.firstName,
+        lastName: user.lastName
       }
     });
   } catch (error) {

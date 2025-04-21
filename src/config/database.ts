@@ -7,7 +7,7 @@ dotenv.config();
 const requiredEnvVars = [
   'DB_NAME',
   'DB_USER',
-  'DB_PASS',
+  'DB_PASSWORD',
   'DB_HOST',
   'DB_PORT',
   'DB_DIALECT',
@@ -25,10 +25,10 @@ if (missingVars.length > 0) {
 const dbConfig = {
   database: process.env.DB_NAME!,
   username: process.env.DB_USER!,
-  password: process.env.DB_PASS!,
+  password: process.env.DB_PASSWORD!,
   host: process.env.DB_HOST!,
   port: Number(process.env.DB_PORT!),
-  dialect: process.env.DB_DIALECT! as 'mysql',
+  dialect: 'mysql' as const,
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
     max: 5,
@@ -47,6 +47,7 @@ const dbConfig = {
   }
 };
 
+// Create Sequelize instance
 export const sequelize = new Sequelize(dbConfig);
 
 // Test database connection

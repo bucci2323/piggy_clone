@@ -7,7 +7,7 @@ import { sequelize } from '../config/database';
 // Create a new savings plan
 export const createSavingsPlan = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   const { name, type, targetAmount, lockPeriod, autoSave, autoSaveAmount, autoSaveFrequency } = req.body;
-  const userId = req.user?.id; // Assuming you have user authentication middleware
+  const userId = req.user?.id; 
 
   const t = await sequelize.transaction();
 
@@ -22,10 +22,10 @@ export const createSavingsPlan = async (req: Request, res: Response, next: NextF
       autoSaveAmount,
       autoSaveFrequency,
       userId,
-      interestRate: calculateInterestRate(type), // You'll need to implement this
+      interestRate: calculateInterestRate(type), 
     }, { transaction: t });
 
-    // If initial deposit is provided, process it
+
     if (req.body.initialDeposit) {
       const wallet = await Wallet.findOne({ where: { userId } });
       if (!wallet) {

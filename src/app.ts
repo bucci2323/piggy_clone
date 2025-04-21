@@ -1,9 +1,10 @@
-import express, { Application, Request, Response } from 'express';
+import express from 'express';
 import cors from 'cors';
 import savingsRoutes from './routes/savings.routes';
 import { errorHandler } from './middleware/errorHandler';
+import { Request, Response } from 'express';
 
-const app: Application = express();
+const app = express();
 
 // Middleware
 app.use(cors({

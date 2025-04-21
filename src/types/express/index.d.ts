@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction, Router, Application } from 'express';
+import { Request, Response, NextFunction, Router, Application, Express } from 'express';
 
 export interface ErrorHandler {
   (err: Error, req: Request, res: Response, next: NextFunction): void;
@@ -15,4 +15,4 @@ export interface AuthRequest extends Request {
   };
 }
 
-export { Request, Response, NextFunction, Router, Application }; 
+export { Request, Response, NextFunction, Router, Application, Express }; 
