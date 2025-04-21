@@ -7,27 +7,41 @@ declare global {
     interface Request {
       user?: {
         id: number;
+        email: string;
       };
     }
   }
 }
 
+interface JwtPayload {
+  id: number;
+  email: string;
+}
+
 export const authenticateToken = (req: Request, res: Response, next: NextFunction): void => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader?.split(' ')[1];
 
-  if (!token) {
-    res.status(401).json({ message: 'Authentication token required' });
-    return;
-  }
-
-  jwt.verify(token, process.env.JWT_SECRET!, (err: any, user: any) => {
-    if (err) {
-      res.status(403).json({ message: 'Invalid or expired token' });
+    if (!token) {
+      res.status(401).json({ message: 'Authentication token required' });
       return;
     }
 
-    req.user = user;
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET) as JwtPayload;
+    req.user = decoded;
     next();
-  });
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ message: 'Token expired' });
+    } else if (error instanceof jwt.JsonWebTokenError) {
+      res.status(401).json({ message: 'Invalid token' });
+    } else {
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  }
 }; 
