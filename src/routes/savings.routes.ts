@@ -4,8 +4,6 @@ import { authenticateToken } from '../middleware/auth';
 import { RouteHandler } from '../types/express';
 
 const router = express.Router();
-
-// Request validation middleware
 const validateCreateSavingsPlan: RouteHandler = async (req, res, next) => {
   const { name, type, targetAmount, lockPeriod, autoSave, autoSaveAmount, autoSaveFrequency } = req.body;
   

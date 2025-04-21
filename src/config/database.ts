@@ -1,18 +1,67 @@
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
-// if (!process.env.DB_NAME || !process.env.DB_USER || !process.env.DB_HOST) {
-//   throw new Error('Missing required environment variables: DB_NAME, DB_USER, DB_HOST');
-// }
+// Validate required environment variables
+const requiredEnvVars = [
+  'DB_NAME',
+  'DB_USER',
+  'DB_PASS',
+  'DB_HOST',
+  'DB_PORT',
+  'DB_DIALECT',
+  'JWT_SECRET',
+  'NODE_ENV'
+];
 
-export const sequelize = new Sequelize(
-  process.env.DB_NAME as string,
-  process.env.DB_USER as string,
-  process.env.DB_PASS,
-  {
-    host: process.env.DB_HOST,
-    dialect: 'mysql',
-    logging: false,
+const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
+
+if (missingVars.length > 0) {
+  throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`);
+}
+
+// Database configuration
+const dbConfig = {
+  database: process.env.DB_NAME!,
+  username: process.env.DB_USER!,
+  password: process.env.DB_PASS!,
+  host: process.env.DB_HOST!,
+  port: Number(process.env.DB_PORT!),
+  dialect: process.env.DB_DIALECT! as 'mysql',
+  logging: process.env.NODE_ENV === 'development' ? console.log : false,
+  pool: {
+    max: 5,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
+  },
+  define: {
+    timestamps: true,
+    underscored: true,
+    freezeTableName: true
+  },
+  dialectOptions: {
+    supportBigNumbers: true,
+    bigNumberStrings: true
   }
-);
+};
+
+export const sequelize = new Sequelize(dbConfig);
+
+// Test database connection
+export const testConnection = async (): Promise<void> => {
+  try {
+    await sequelize.authenticate();
+    console.log('Database connection has been established successfully.');
+    
+    // Sync database (use with caution in production)
+    if (process.env.NODE_ENV === 'development') {
+      await sequelize.sync({ alter: true });
+      console.log('Database synchronized successfully.');
+    }
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
+    process.exit(1);
+  }
+};
