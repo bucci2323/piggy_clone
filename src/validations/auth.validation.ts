@@ -7,9 +7,11 @@ export const registerSchema = [
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
-  body('name')
+  body('firstName')
     .notEmpty()
-    .withMessage('Name is required')
+    .withMessage('firstName is required'),
+    body('lastName').notEmpty()
+    .withMessage('last name required')
 ];
 
 export const loginSchema = [

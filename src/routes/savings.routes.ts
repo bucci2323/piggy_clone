@@ -1,5 +1,5 @@
 import express from 'express';
-import { createSavingsPlan, addToSavings, withdrawFromSavings } from '../controller/savings.controller';
+import { createSavingsPlan, addToSavings, withdrawFromSavings } from '../controllers/savings.controller';
 import { authenticateToken } from '../middleware/auth';
 import { RouteHandler } from '../types/express';
 
