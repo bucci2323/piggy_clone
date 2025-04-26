@@ -7,16 +7,16 @@ import { requestLogger, errorLogger } from './middleware/logger';
 
 const app = express();
 
-// Create logs directory if it doesn't exist
+
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
-const logsDir = join(__dirname, '../logs');
-if (!existsSync(logsDir)) {
-  mkdirSync(logsDir);
-}
+// const logsDir = join(__dirname, '../logs');
+// if (!existsSync(logsDir)) {
+//   mkdirSync(logsDir);
+// }
 
-// Middleware
+
 app.use(cors({
   origin: process.env.CORS_ORIGIN || 'http://localhost:3000',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -43,4 +43,12 @@ app.use((req: Request, res: Response) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-export default app; 
+export default app;
+
+// Start the server if this file is run directly
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
+  });
+} 
