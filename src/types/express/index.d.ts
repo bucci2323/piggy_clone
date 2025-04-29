@@ -1,18 +1,9 @@
-import { Request, Response, NextFunction, Router, Application, Express } from 'express';
+import { User } from '../../models';
 
-export interface ErrorHandler {
-  (err: Error, req: Request, res: Response, next: NextFunction): void;
+declare global {
+  namespace Express {
+    interface Request {
+      user?: User;
+    }
+  }
 }
-
-export interface RouteHandler {
-  (req: Request, res: Response, next: NextFunction): Promise<void>;
-}
-
-export interface AuthRequest extends Request {
-  user?: {
-    id: number;
-    email: string;
-  };
-}
-
-export { Request, Response, NextFunction, Router, Application, Express }; 

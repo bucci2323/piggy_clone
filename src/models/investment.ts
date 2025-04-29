@@ -2,20 +2,21 @@ import { DataTypes, Model, Sequelize } from 'sequelize';
 import { User } from './user';
 import { Wallet } from './wallet';
 
-export class Transaction extends Model {
+export class Investment extends Model {
   declare id: string;
   declare userId: string;
   declare walletId: string;
-  declare type: 'deposit' | 'withdrawal' | 'savings' | 'investment' | 'transfer';
+  declare planName: string;
   declare amount: number;
-  declare currency: 'NGN' | 'USD';
-  declare status: 'pending' | 'completed' | 'failed';
-  declare description: string;
+  declare expectedReturn: number;
+  declare startDate: Date;
+  declare endDate: Date;
+  declare status: 'active' | 'completed' | 'cancelled';
   declare createdAt: Date;
   declare updatedAt: Date;
 
   static initialize(sequelize: Sequelize) {
-    Transaction.init(
+    Investment.init(
       {
         id: {
           type: DataTypes.UUID,
@@ -38,32 +39,39 @@ export class Transaction extends Model {
             key: 'id',
           },
         },
-        type: {
-          type: DataTypes.ENUM('deposit', 'withdrawal', 'savings', 'investment', 'transfer'),
+        planName: {
+          type: DataTypes.STRING,
           allowNull: false,
         },
         amount: {
           type: DataTypes.DECIMAL(15, 2),
           allowNull: false,
           validate: {
-            notNull: true,
-            min: 0.01,
+            min: 1000, // Minimum investment amount
           },
         },
-        currency: {
-          type: DataTypes.ENUM('NGN', 'USD'),
+        expectedReturn: {
+          type: DataTypes.DECIMAL(15, 2),
           allowNull: false,
         },
-        status: {
-          type: DataTypes.ENUM('pending', 'completed', 'failed'),
-          defaultValue: 'pending',
+        startDate: {
+          type: DataTypes.DATE,
+          allowNull: false,
         },
-        description: {
-          type: DataTypes.STRING,
+        endDate: {
+          type: DataTypes.DATE,
           allowNull: false,
           validate: {
-            notEmpty: true,
+            isAfterStartDate(value: Date) {
+              // if (value <= this.startDate) {
+              //   throw new Error('End date must be after start date');
+              // }
+            },
           },
+        },
+        status: {
+          type: DataTypes.ENUM('active', 'completed', 'cancelled'),
+          defaultValue: 'active',
         },
         createdAt: {
           type: DataTypes.DATE,
@@ -76,15 +84,15 @@ export class Transaction extends Model {
       },
       {
         sequelize,
-        modelName: 'Transaction',
+        modelName: 'Investment',
       }
     );
   }
 
   static associate(models: any) {
-    Transaction.belongsTo(models.User, { foreignKey: 'userId' });
-    Transaction.belongsTo(models.Wallet, { foreignKey: 'walletId' });
-    models.User.hasMany(Transaction, { foreignKey: 'userId' });
-    models.Wallet.hasMany(Transaction, { foreignKey: 'walletId' });
+    Investment.belongsTo(models.User, { foreignKey: 'userId' });
+    Investment.belongsTo(models.Wallet, { foreignKey: 'walletId' });
+    models.User.hasMany(Investment, { foreignKey: 'userId' });
+    models.Wallet.hasMany(Investment, { foreignKey: 'walletId' });
   }
 }

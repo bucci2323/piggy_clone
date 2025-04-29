@@ -1,24 +1,47 @@
-import { DataTypes } from 'sequelize';
-import { sequelize } from '../config/database';
-import { User } from '../models/User';  
+import { DataTypes, Model } from 'sequelize';
+import sequelize from '../config/database';
+import User from './User';
 
-export const Wallet = sequelize.define('Wallet', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
-  balance: {
-    type: DataTypes.FLOAT,
-    allowNull: false,
-    defaultValue: 0.0,
-  },
-}, {
-  tableName: 'wallets', 
-  timestamps: true,
-});
+class Wallet extends Model {
+  public id!: string;
+  public userId!: string;
+  public currency!: 'NGN' | 'USD';
+  public balance!: number;
+  public createdAt!: Date;
+  public updatedAt!: Date;
+}
 
-User.hasOne(Wallet);
-Wallet.belongsTo(User);
+Wallet.init(
+  {
+    id: { 
+      type: DataTypes.UUID, 
+      defaultValue: DataTypes.UUIDV4, 
+      primaryKey: true 
+    },
+    userId: { 
+      type: DataTypes.UUID, 
+      allowNull: false,
+      references: {
+        model: User,
+        key: 'id'
+      }
+    },
+    currency: { 
+      type: DataTypes.ENUM('NGN', 'USD'), 
+      allowNull: false 
+    },
+    balance: { 
+      type: DataTypes.DECIMAL(15, 2), 
+      defaultValue: 0.0,
+      validate: {
+        min: 0
+      }
+    },
+  },
+  { sequelize, modelName: 'Wallet' }
+);
+
+Wallet.belongsTo(User, { foreignKey: 'userId' });
+User.hasMany(Wallet, { foreignKey: 'userId' });
 
 export default Wallet;
