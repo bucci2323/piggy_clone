@@ -1,59 +1,68 @@
 import { Request, Response } from 'express';
-import { Wallet, Transaction } from '../models';
-import { logger } from '../utils/logger';
+import Wallet from '../models/wallet';
+import User from '../models/user';
 
 export const createWallet = async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).user.userId;
     const { currency } = req.body;
-    const userId = req.user.id; // Will be set by auth middleware
+
+
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+
+    const existingWallet = await Wallet.findOne({
+      where: { userId, currency },
+    });
+    if (existingWallet) {
+      return res.status(400).json({ message: 'Wallet already exists for this currency' });
+    }
 
     const wallet = await Wallet.create({
       userId,
       currency,
-      balance: 0,
     });
 
     res.status(201).json({
-      status: 'success',
-      data: { wallet },
+      message: 'Wallet created successfully',
+      wallet,
     });
   } catch (error) {
-    logger.error('Error creating wallet:', error);
-    res.status(500).json({ message: 'Error creating wallet' });
+    res.status(500).json({ message: 'Error creating wallet', error });
   }
 };
 
-export const deposit = async (req: Request, res: Response) => {
+export const getWallets = async (req: Request, res: Response) => {
   try {
-    const { amount } = req.body;
-    const { id } = req.params;
-    const userId = req.user.id;
+    const userId = (req as any).user.userId;
+    const wallets = await Wallet.findAll({
+      where: { userId },
+    });
 
-    const wallet = await Wallet.findOne({ where: { id, userId } });
+    res.json(wallets);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching wallets', error });
+  }
+};
+
+export const getWalletById = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { id } = req.params;
+
+    const wallet = await Wallet.findOne({
+      where: { id, userId },
+    });
+
     if (!wallet) {
       return res.status(404).json({ message: 'Wallet not found' });
     }
 
-    // Create transaction record
-    const transaction = await Transaction.create({
-      userId,
-      walletId: id,
-      type: 'deposit',
-      amount,
-      currency: wallet.currency,
-      status: 'completed',
-      description: 'Wallet deposit',
-    });
-
-    // Update wallet balance
-    await wallet.increment('balance', { by: amount });
-
-    res.status(200).json({
-      status: 'success',
-      data: { transaction },
-    });
+    res.json(wallet);
   } catch (error) {
-    logger.error('Error processing deposit:', error);
-    res.status(500).json({ message: 'Error processing deposit' });
+    res.status(500).json({ message: 'Error fetching wallet', error });
   }
-};
+}; 

@@ -4,12 +4,10 @@ import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
 
-
-router.use(authenticateToken);
-
+// Auth routes
 router.post('/register', register);
 router.post('/login', login);
-router.get('/profile', getProfile);
-router.put('/kyc', updateKYC);
+router.get('/profile', authenticateToken, getProfile);
+router.put('/kyc', authenticateToken, updateKYC);
 
 export default router; 

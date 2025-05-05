@@ -1,13 +1,16 @@
 import { Router } from 'express';
-import { InvestmentController } from '../controllers/investmentController';
+import { createInvestment, getInvestments, getInvestmentById, updateInvestment, deleteInvestment } from '../controllers/InvestmentController';
+import { authenticateToken } from '../middleware/auth';
 
 const router = Router();
-const investmentController = new InvestmentController();
 
-router.post('/', investmentController.createInvestment);
-router.get('/', investmentController.getInvestments);
-router.get('/:id', investmentController.getInvestment);
-router.post('/:id/liquidate', investmentController.liquidateInvestment);
-router.get('/plans', investmentController.getInvestmentPlans);
+// All routes are protected
+router.use(authenticateToken);
 
-export default router;
+router.post('/', createInvestment);
+router.get('/', getInvestments);
+router.get('/:id', getInvestmentById);
+router.put('/:id', updateInvestment);
+router.delete('/:id', deleteInvestment);
+
+export default router; 

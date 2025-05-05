@@ -1,191 +1,161 @@
 import { Request, Response } from 'express';
-import { Investment, Wallet } from '../models';
-import { logger } from '../utils/logger';
-
-export const getInvestments = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user.id;
-    const investments = await Investment.findAll({ where: { userId } });
-    res.status(200).json(investments);
-  } catch (error) {
-    logger.error('Error fetching investments:', error);
-    res.status(500).json({ message: 'Error fetching investments' });
-  }
-};
+// import Investment from '../models/investment';
+// import User from '../models/user';
+// import Wallet from '../models/wallet';
+// import Transaction from '../models/transaction';
+import {User, Wallet, Transaction , Investment} from '../models';
 
 export const createInvestment = async (req: Request, res: Response) => {
   try {
-    const { walletId, planName, amount, expectedReturn, startDate, endDate } = req.body;
-    const userId = req.user.id;
+    const userId = (req as any).user.userId;
+    const { walletId, type, amount, duration, riskLevel } = req.body;
 
-    const wallet = await Wallet.findOne({ where: { id: walletId, userId } });
+    // Check if user exists
+    const user = await User.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Check if wallet exists and belongs to user
+    const wallet = await Wallet.findOne({
+      where: { id: walletId, userId },
+    });
     if (!wallet) {
       return res.status(404).json({ message: 'Wallet not found' });
     }
 
+    // Check if wallet has sufficient balance
+    if (wallet.balance < amount) {
+      return res.status(400).json({ message: 'Insufficient balance' });
+    }
+
+    // Calculate expected returns based on type and duration
+    let expectedReturns = 0;
+    switch (type) {
+      case 'stocks':
+        expectedReturns = amount * 0.1 * (duration / 12); // 10% annual return
+        break;
+      case 'bonds':
+        expectedReturns = amount * 0.05 * (duration / 12); // 5% annual return
+        break;
+      case 'mutual_funds':
+        expectedReturns = amount * 0.08 * (duration / 12); // 8% annual return
+        break;
+    }
+
+    // Create investment
     const investment = await Investment.create({
       userId,
       walletId,
-      planName,
+      type,
       amount,
-      expectedReturn,
-      startDate,
-      endDate,
+      duration,
+      riskLevel,
+      expectedReturns,
       status: 'active',
     });
 
-    res.status(201).json(investment);
+    // Create transaction
+    await Transaction.create({
+      userId,
+      walletId,
+      type: 'investment',
+      amount,
+      currency: wallet.currency,
+      status: 'completed',
+      description: `Investment in ${type}`,
+    });
+
+    // Update wallet balance
+    wallet.balance -= amount;
+    await wallet.save();
+
+    res.status(201).json({
+      message: 'Investment created successfully',
+      investment,
+    });
   } catch (error) {
-    logger.error('Error creating investment:', error);
-    res.status(500).json({ message: 'Error creating investment' });
+    res.status(500).json({ message: 'Error creating investment', error });
+  }
+};
+
+export const getInvestments = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    const investments = await Investment.findAll({
+      where: { userId },
+      include: [Wallet],
+    });
+
+    res.json(investments);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching investments', error });
+  }
+};
+
+export const getInvestmentById = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { id } = req.params;
+
+    const investment = await Investment.findOne({
+      where: { id, userId },
+      include: [Wallet],
+    });
+
+    if (!investment) {
+      return res.status(404).json({ message: 'Investment not found' });
+    }
+
+    res.json(investment);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching investment', error });
   }
 };
 
 export const updateInvestment = async (req: Request, res: Response) => {
   try {
+    const userId = (req as any).user.userId;
     const { id } = req.params;
-    const { planName, amount, expectedReturn, startDate, endDate, status } = req.body;
-    const userId = req.user.id;
+    const { status } = req.body;
 
-    const investment = await Investment.findOne({ where: { id, userId } });
+    const investment = await Investment.findOne({
+      where: { id, userId },
+    });
+
     if (!investment) {
       return res.status(404).json({ message: 'Investment not found' });
     }
 
-    await investment.update({ planName, amount, expectedReturn, startDate, endDate, status });
-    res.status(200).json(investment);
+    investment.status = status;
+    await investment.save();
+
+    res.json({
+      message: 'Investment updated successfully',
+      investment,
+    });
   } catch (error) {
-    logger.error('Error updating investment:', error);
-    res.status(500).json({ message: 'Error updating investment' });
+    res.status(500).json({ message: 'Error updating investment', error });
   }
 };
 
+export const deleteInvestment = async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId;
+    const { id } = req.params;
 
+    const investment = await Investment.findOne({
+      where: { id, userId },
+    });
 
-// import { Request, Response, NextFunction } from 'express';
-// import { Investment, Wallet, Transaction } from '../models';
-// import { logger } from '../utils/logger';
+    if (!investment) {
+      return res.status(404).json({ message: 'Investment not found' });
+    }
 
-// export class InvestmentController {
-//   public async createInvestment(req: Request, res: Response, next: NextFunction) {
-//     try {
-//       const { amount, duration, planId } = req.body;
-//       if (!req.user?.id) {
-//         return res.status(401).json({
-//           status: 'error',
-//           message: 'Unauthorized'
-//         });
-//       }
-//       const userId = req.user.id;
+    await investment.destroy();
 
-//       const investment = await Investment.create({
-//         userId,
-//         amount,
-//         duration,
-//         planId,
-//         status: 'active',
-//         startDate: new Date(),
-//         endDate: new Date(Date.now() + duration * 24 * 60 * 60 * 1000)
-//       });
-
-//       res.status(201).json({
-//         status: 'success',
-//         data: { investment }
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-
-//   public async getInvestments(req: Request, res: Response, next: NextFunction) {
-//     try {
-//       if (!req.user?.id) {
-//         return res.status(401).json({
-//           status: 'error',
-//           message: 'Unauthorized'
-//         });
-//       }
-//       const userId = req.user.id;
-//       const investments = await Investment.findAll({ where: { userId } });
-
-//       res.status(200).json({
-//         status: 'success',
-//         data: { investments }
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-
-//   public async getInvestment(req: Request, res: Response, next: NextFunction) {
-//     try {
-//       if (!req.user?.id) {
-//         return res.status(401).json({
-//           status: 'error',
-//           message: 'Unauthorized'
-//         });
-//       }
-//       const userId = req.user.id;
-//       const { id } = req.params;
-
-//       const investment = await Investment.findOne({ where: { id, userId } });
-//       if (!investment) {
-//         throw new Error('Investment not found');
-//       }
-
-//       res.status(200).json({
-//         status: 'success',
-//         data: { investment }
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-
-//   public async liquidateInvestment(req: Request, res: Response, next: NextFunction) {
-//     try {
-//       if (!req.user?.id) {
-//         return res.status(401).json({
-//           status: 'error',
-//           message: 'Unauthorized'
-//         });
-//       }
-//       const userId = req.user.id;
-//       const { id } = req.params;
-
-//       const investment = await Investment.findOne({ where: { id, userId } });
-//       if (!investment) {
-//         throw new Error('Investment not found');
-//       }
-
-
-//       investment.status = 'active';
-//       await investment.save();
-
-//       res.status(200).json({
-//         status: 'success',
-//         data: { investment }
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-
-//   public async getInvestmentPlans(req: Request, res: Response, next: NextFunction) {
-//     try {
-//       // Add investment plans logic here
-//       const plans = [
-//         { id: 1, name: 'Basic Plan', minAmount: 1000, interestRate: 10 },
-//         { id: 2, name: 'Premium Plan', minAmount: 5000, interestRate: 15 },
-//         { id: 3, name: 'Elite Plan', minAmount: 10000, interestRate: 20 }
-//       ];
-
-//       res.status(200).json({
-//         status: 'success',
-//         data: { plans }
-//       });
-//     } catch (error) {
-//       next(error);
-//     }
-//   }
-// }
+    res.json({ message: 'Investment deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting investment', error });
+  }
+}; 

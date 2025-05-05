@@ -1,14 +1,19 @@
 import { Router } from 'express';
-import userRoutes from './userRoutes';
+import authRoutes from './authRoutes';
 import walletRoutes from './walletRoutes';
+import savingsPlanRoutes from './savingsPlanRoutes';
 import investmentRoutes from './investmentRoutes';
-import savingsRoutes from './savingsRoutes';
+import transactionRoutes from './transactionRoutes';
+import userRoutes from './userRoutes';
 
 const router = Router();
 
-router.use('/users', userRoutes);
-router.use('/wallets', walletRoutes);
-router.use('/investments', investmentRoutes);
-router.use('/savings', savingsRoutes);
 
-export default router;
+router.use('/auth', authRoutes);
+router.use('/wallets', walletRoutes);
+router.use('/savings-plans', savingsPlanRoutes);
+router.use('/investments', investmentRoutes);
+router.use('/transactions', transactionRoutes);
+router.use('/users', userRoutes);
+
+export default router; 

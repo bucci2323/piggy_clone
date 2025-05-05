@@ -1,30 +1,7 @@
-import { sequelize } from '../config/database';
-import { User } from './user';
-import { Wallet } from './wallet';
-import { Transaction } from './transaction';
-import { SavingsPlan } from './savingsPlan';
-import { Investment } from './investment';
+import User from './user';
+import Wallet from './wallet';
+import SavingsPlan from './SavingsPlan';
+import Investment from './investment';
+import Transaction from './transaction';
 
-User.initialize(sequelize);
-Wallet.initialize(sequelize);
-Transaction.initialize(sequelize);
-SavingsPlan.initialize(sequelize);
-Investment.initialize(sequelize);
-
-
-const models = {
-  User,
-  Wallet,
-  Transaction,
-  SavingsPlan,
-  Investment,
-};
-
-
-Object.values(models).forEach((model) => {
-  if (model.associate) {
-    model.associate(models);
-  }
-});
-
-export { sequelize, User, Wallet, Transaction, SavingsPlan, Investment };
+export { User, Wallet, SavingsPlan, Investment, Transaction }; 
