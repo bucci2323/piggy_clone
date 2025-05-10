@@ -15,10 +15,10 @@ export const register = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-
+    // Create user
     const user = await User.create({
       email,
       password: hashedPassword,
@@ -26,14 +26,14 @@ export const register = async (req: Request, res: Response) => {
       lastName,
     });
 
-
+    // Generate JWT token
     const token = jwt.sign(
       { userId: user.id, email: user.email },
       JWT_SECRET,
       { expiresIn: '24h' }
     );
 
-    res.status(201).json({
+    const response = {
       message: 'User registered successfully',
       user: {
         id: user.id,
@@ -42,8 +42,11 @@ export const register = async (req: Request, res: Response) => {
         lastName: user.lastName,
       },
       token,
-    });
+    };
+    console.log('Register Response:', response);
+    res.status(201).json(response);
   } catch (error) {
+    console.error('Error in register:', error);
     res.status(500).json({ message: 'Error registering user', error });
   }
 };
@@ -52,18 +55,15 @@ export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-
     const user = await User.findOne({ where: { email } });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
-
 
     const token = jwt.sign(
       { userId: user.id, email: user.email },
@@ -71,7 +71,7 @@ export const login = async (req: Request, res: Response) => {
       { expiresIn: '24h' }
     );
 
-    res.json({
+    const response = {
       message: 'Login successful',
       user: {
         id: user.id,
@@ -80,8 +80,11 @@ export const login = async (req: Request, res: Response) => {
         lastName: user.lastName,
       },
       token,
-    });
+    };
+    console.log('Login Response:', response);
+    res.json(response);
   } catch (error) {
+    console.error('Error in login:', error);
     res.status(500).json({ message: 'Error logging in', error });
   }
 };
@@ -142,12 +145,10 @@ export const changePassword = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-
     const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Current password is incorrect' });
     }
-
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
